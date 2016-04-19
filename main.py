@@ -195,11 +195,179 @@ for elm in distance_not_one:
 
 #Put an assert here
 len_new=[len(x) for x in lp_cluster_new]
-print sum(len_new), len(lp_cluster_new), lp_cluster_new
+print 'length check', sum(len_new), len(lp_cluster_new), lp_cluster_new
 
 #Now we measure the edit distance between clusters.
-#There are many ways of doing this: min, max, average,...
-#We will use the average of the edit distance between elements of clusters
+#There are many ways of using the edit distance: min, max, average,...
+#We will use the average of the edit distance between elements of each clusters
+
+lp_cluster_old=sorted(list(lp_cluster_new))
+print lp_cluster_old
+#lp_cluster_old=[[1,2,3],[3,4],[5,6,7],[11], [12],[13,15,16],[20,25]]
+print lp_cluster_old
+len_new=[len(x) for x in lp_cluster_old]
+print 'length check', sum(len_new)
+print 'cluster check', lp_cluster_old[20]
+
+
+print 'Reducing the number of Clusters...'
+#while True:
+for i in range(21):
+    edit_dis_clus_dict={}
+    for i in range(0,len(lp_cluster_old)):
+        for j in range(i+1,len(lp_cluster_old)):
+            #Selected i and j cluster calculate the edit distance
+            edit_dis_clus=[]
+            for elmi in lp_cluster_old[i]:
+                for elmj in lp_cluster_old[j]:
+                    val_loop=editdistance.eval(word_list[elmi], word_list[elmj])
+                    edit_dis_clus.append(val_loop)
+            #print len(lp_cluster_old[i])*len(lp_cluster_old[j])
+            #print len(edit_dis_clus)
+            edit_dis_clus_dict[(i,j)]=sum(edit_dis_clus)/len(edit_dis_clus)
+            #print 'sum', sum(edit_dis_clus)/len(edit_dis_clus)
+
+    #print edit_dis_clus_dict
+
+    min_dist=min(edit_dis_clus_dict.values())
+
+    print 'min dist', min_dist
+
+
+    common_one=[it for it in edit_dis_clus_dict.keys() if edit_dis_clus_dict[it]==min_dist]
+    #common_one=sorted(common_one)
+    common_one_list=list(np.unique(list(common_one)))
+
+    common_zero=[it for it in edit_dis_clus_dict.keys() if edit_dis_clus_dict[it]!=min_dist]
+    common_zero_list=list(np.unique(list(common_zero)))
+    common_zero_list2=[it for it in common_zero_list if it not in common_one_list]
+
+    #print len(common_one_list),common_one_list
+    #print common_one
+    #print 'common zero 2', len(common_zero_list2), common_zero_list2
+
+    ky=(1,2)
+    used2=[0,2]
+    #print 'results', (ky[0] not in used2) and (ky[1] not in used2)
+
+    new_clusters=[]
+    used2=[]
+    for ky in common_one:
+        #print 'ky', ky,ky[0], ky[1], used2
+        #If one is there the other is too
+        #It is like saying that cluster has been already merged
+        #print (ky[0] not in used2 and ky[1] not in used2)
+        if (ky[0] not in used2) and (ky[1] not in used2):
+            loop_cluster=[]
+            loop_cluster=loop_cluster+list(ky)
+            #print loop_cluster
+            #cluster_val=[k2 for (k1,k2) in common_one if (k1==ky[0] or k1==ky[1]) ]
+            #cluster_val2=[k1 for (k1,k2) in common_one if (k2==ky[0] or k2==ky[1]) ]
+            #res_loop=np.unique(loop_cluster+cluster_val+cluster_val2)
+            res_loop=np.unique(loop_cluster)
+            #for i in cluster_val:
+            #    cluster_val_l=[k2 for (k1,k2) in distance_one if (k1==i or k1==i) ]
+            #print cluster_val
+            #print cluster_val2
+            #print 'unique', np.unique(loop_cluster+cluster_val+cluster_val2)
+            #print loop_cluster+cluster_val
+            #res_loop=np.unique(loop_cluster+cluster_val+cluster_val2)
+            #print res_loop
+            #Add it to the cluster list
+            new_clusters.append(list(res_loop))
+            #Updated the already set words
+            used2 = list(np.unique(used2+list(res_loop)))
+            #if len(used) != len(np.unique(used)):
+            #    print 'ERROR!'
+            #    break
+            #print 'used2', sorted(used2)
+            #print'new clusters', new_clusters
+        #elif ky[0] in used2:
+        #    new_clusters.append([ky[1]])
+        #    used2 = list(np.unique(used2+[ky[1]]))
+        #elif ky[1] in used2:
+        #    new_clusters.append([ky[0]])
+        #    used2 = list(np.unique(used2+[ky[0]]))
+
+    missing_clusters=[it for it in common_one_list if it not in used2]
+
+    #print 'missing clusters', missing_clusters
+
+
+    len_new=[len(x) for x in new_clusters]
+
+    #print 'length comparison new', sum(len_new)
+
+    #print 'used len', len(used2), len(np.unique(used2))
+    #Create the new list
+    lp_cluster_new=[]
+
+    #Unravel the cluster notation
+    for elm in new_clusters:
+        term_append=[]
+        for it in elm:
+            term_append = list(np.unique(term_append + lp_cluster_old[it]))
+        lp_cluster_new.append(term_append)
+
+    #And the clusters we have missed
+    for elm in missing_clusters:
+        lp_cluster_new.append(lp_cluster_old[elm])
+
+    #print lp_cluster_new
+
+    len_new=[len(x) for x in lp_cluster_new]
+
+    #print 'length comparison', sum(len_new)
+
+    #Lets not forget to add those clusters that did not have the minimum amount in common
+    for elm in common_zero_list2:
+        lp_cluster_new.append(lp_cluster_old[elm])
+
+
+    len_old=[len(x) for x in lp_cluster_old]
+    len_new=[len(x) for x in lp_cluster_new]
+
+    print 'length comparison', sum(len_old), sum(len_new), len_old, len_new
+    print len(lp_cluster_old)
+    print len(lp_cluster_new)
+    print sorted(lp_cluster_new)
+    print sorted(lp_cluster_old)
+
+    new_old=[item for sublist in lp_cluster_old for item in sublist]
+    new_new=[item for sublist in lp_cluster_new for item in sublist]
+    print len(new_old), len(np.unique(new_old))
+    print len(new_new), len(np.unique(new_new))
+    vals=[it for it in new_old if it not in new_new]
+    print vals
+
+    print 'Cluster reduction from '+str(len(lp_cluster_old))+' to '+ str(len(lp_cluster_new))
+    #Make the new list the old one
+    lp_cluster_old=list(lp_cluster_new)
+
+    if len(lp_cluster_old)<8:
+        print 'Enough done...'
+        break
+
+
+print 'Results by cluster:'
+
+for i in range(len(lp_cluster_new)):
+    elm_list=[word_list[it] for it in lp_cluster_new[i]]
+    print 'Cluster number '+str(i+1)+' :'
+    print elm_list
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
